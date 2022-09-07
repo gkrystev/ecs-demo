@@ -1,0 +1,46 @@
+[
+  {
+    "name": "db_init",
+    "image": "${account_id}.dkr.ecr.${region}.amazonaws.com/${db_init_image}",
+    "cpu": 512,
+    "memory": 1024,
+    "essential": true,
+    "environment": [
+      {
+        "name": "RDS_HOST",
+        "value": "${rds_host}"
+      },
+      {
+        "name": "RDS_PORT",
+        "value": "${rds_port}"
+      },
+      {
+        "name": "RDS_ROOT_USERNAME",
+        "value": "${rds_root_username}"
+      },
+      {
+        "name": "WEB_APP_DB_USERNAME",
+        "value": "${web_app_db_username}"
+      },
+      {
+        "name": "WEB_APP_DB_NAME",
+        "value": "${web_app_db_name}"
+      }
+    ],
+    "secrets": [
+      {
+        "name": "RDS_ROOT_PASSWORD",
+        "valueFrom": "${rds_root_password}"
+      }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${ecs_log_group}",
+        "awslogs-region": "${region}",
+        "awslogs-create-group": "true",
+        "awslogs-stream-prefix": "${ecs_log_prefix}"
+      }
+    }
+  }
+]

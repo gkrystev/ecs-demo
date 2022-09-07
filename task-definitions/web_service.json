@@ -1,0 +1,46 @@
+[
+  {
+    "name": "frontend",
+    "image": "${account_id}.dkr.ecr.${region}.amazonaws.com/${web_app_image}",
+    "cpu": 512,
+    "memory": 1024,
+    "essential": true,
+    "portMappings": [
+      {
+        "containerPort": 80,
+        "hostPort": 80
+      }
+    ],
+    "environment": [
+      {
+        "name": "RDS_HOST",
+        "value": "${rds_host}"
+      },
+      {
+        "name": "RDS_PORT",
+        "value": "${rds_port}"
+      },
+      {
+        "name": "WEB_APP_DB_USERNAME",
+        "value": "${web_app_db_username}"
+      },
+      {
+        "name": "WEB_APP_DB_NAME",
+        "value": "${web_app_db_name}"
+      },
+      {
+        "name": "REGION",
+        "value": "${region}"
+      }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${ecs_log_group}",
+        "awslogs-region": "${region}",
+        "awslogs-create-group": "true",
+        "awslogs-stream-prefix": "${ecs_log_prefix}"
+      }
+    }
+  }
+]

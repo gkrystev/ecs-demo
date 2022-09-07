@@ -1,0 +1,57 @@
+name: "Build docker images"
+
+permissions:
+  id-token: write # required to use OIDC authentication
+  contents: read # required to check out the code from the repo
+  pull-requests: write # allow GH Action to write in the PR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "dockerfiles/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "dockerfiles/**"
+
+jobs:
+  build:
+    name: Build Image
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS
+      id: configure_aws
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: "${{ secrets.AWS_ROLE }}"
+        role-duration-seconds: 900
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      env:
+        AWS_ROLE: "${{ secrets.AWS_ROLE }}"
+        AWS_REGION: us-east-1
+        CONTAINERS: db_init,web_app_php,web_app_django
+      working-directory: dockerfiles
+      run: |
+        export AWS_ACCOUNT=$(echo $AWS_ROLE | cut -d":" -f5)
+        while read CNAME; do
+          if ! aws ecr describe-repositories  --region us-east-1 --repository-names ${CNAME} > /dev/null 2>&1; then
+            echo "Creating new ECR (${CNAME})"
+            aws ecr create-repository --repository-name ${CNAME} --region ${AWS_REGION}
+          fi
+          docker build -t ${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CNAME}:latest ${CNAME}
+        
+          # TODO: push images only on merge to main branch, otherwise, build them only to test for errors
+          docker push ${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CNAME}:latest
+        done <<< $(echo $CONTAINERS| tr "," "\n") 
